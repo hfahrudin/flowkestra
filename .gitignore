@@ -10,3 +10,6 @@ mlruns
 legacy/
 *.yml
 !config.example.yml
+flowkestra.egg-info
+local_test/
+test_data/

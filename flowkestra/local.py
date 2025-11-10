@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys
+import requests
 
 class LocalTrainer:
     def __init__(self, workdir, venv_name, requirements, mlflow_uri=None):
@@ -37,7 +38,13 @@ class LocalTrainer:
             env.update(additional_env)
 
         venv_python = os.path.join(self.workdir, self.venv_name, "bin", "python")
-        subprocess.run([venv_python, script_path], check=True, env=env)
+
+        try:
+            print([venv_python, script_path])
+            subprocess.run([venv_python, script_path], check=True, env=env)
+        except subprocess.CalledProcessError as e:
+            print("Script failed with return code:", e.returncode)
+            raise
 
     def close(self):
         pass

@@ -23,14 +23,13 @@ def main():
     args = parser.parse_args()
 
     manager = TrainingManager(args.file)
-    manager.setup()
-
+    manager.setup_all()
     script_path = manager.config.get("script_path")
     if not script_path:
         print("Error: 'script_path' must be defined in the YAML file")
         sys.exit(1)
 
-    deployed_script = manager.deploy_script(script_path)
+    deployed_script = manager.run_all(script_path)
     additional_env = manager.config.get("env_vars", {})
 
     # Run in async mode

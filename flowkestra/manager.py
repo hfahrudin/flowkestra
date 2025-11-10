@@ -1,7 +1,7 @@
 import yaml
 from flowkestra.remote import RemoteTrainer
 from flowkestra.local import LocalTrainer
-
+import requests
 
 class TrainingManager:
     def __init__(self, config_path):
@@ -9,6 +9,7 @@ class TrainingManager:
             self.config = yaml.safe_load(f)
 
         self.mlflow_uri = self.config.get("mlflow_uri")
+        self.check_mlflow_server()
         self.instances = self.config.get("instances", [])
         if not self.instances:
             raise ValueError("No instances defined in YAML under 'instances:'")
@@ -51,7 +52,7 @@ class TrainingManager:
             print(f"\n🧩 Setting up instance: {conf.get('name')}")
             trainer.setup_environment()
 
-    def run_all(self):
+    def run_all(self, script_path):
         """Run ETL and training on each instance."""
         for conf, trainer in self.trainers:
             print(f"\n🚀 Running instance: {conf.get('name')}")
@@ -68,7 +69,23 @@ class TrainingManager:
                 trainer.run_training(train_script, env_vars)
             if dataset_path:
                 trainer.deploy_dataset(dataset_path)
-
     def close_all(self):
         for _, trainer in self.trainers:
             trainer.close()
+
+    def check_mlflow_server(self, timeout=5):
+        """Check if MLflow server root URL is reachable."""
+        if not self.mlflow_uri:
+            return  # nothing to check
+
+        uri_check = self.mlflow_uri+"/#/experiments"
+        try:
+            response = requests.get(uri_check, timeout=timeout)
+            if response.status_code == 200:
+                print(f"✓ MLflow server at {self.mlflow_uri} is reachable.")
+            else:
+                raise ConnectionError(
+                    f"MLflow server responded with status code {response.status_code}"
+                )
+        except requests.RequestException as e:
+            raise ConnectionError(f"Cannot connect to MLflow at {self.mlflow_uri}: {e}")
