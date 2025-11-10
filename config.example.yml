@@ -6,7 +6,7 @@ instances:
   - name: local_run
     mode: local
     workdir: "./local_test"            # Where training and venv will live
-    venv_name: "orkeslora_env_local"   # Name of the virtual environment
+    venv_name: "flowkestra_env_local"   # Name of the virtual environment
     requirements: "test_data/requirements_local.txt"   # Pip requirements file
     etl_script: "test_data/etl_local.py"       # ETL script path
     training_script: "test_data/train_local.py" # Training script path
@@ -18,7 +18,7 @@ instances:
   # - name: remote_gpu_server
   #   mode: remote
   #   mlflow_uri: "http://mlflow.yourserver.com:5000"
-  #   venv_name: "orkeslora_env_gpu"
+  #   venv_name: "flowkestra_env_gpu"
   #   requirements: "requirements_gpu.txt"
   #   etl_script: "scripts/etl_remote.py"
   #   training_script: "scripts/train_remote.py"
@@ -27,4 +27,4 @@ instances:
   #     hostname: "192.168.1.100"
   #     username: "ubuntu"
   #     key_filename: "~/.ssh/id_rsa"
-  #     remote_workdir: "/home/ubuntu/orkeslora_runs/gpu_run"
+  #     remote_workdir: "/home/ubuntu/flowkestra_runs/gpu_run"
