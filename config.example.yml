@@ -1,0 +1,25 @@
+mlflow_uri: "http://mlflow.yourserver.com:5000"
+
+instances:
+  - name: local_run
+    mode: local
+    workdir: "./training_local"
+    venv_name: "orkeslora_env_local"
+    requirements: "requirements_local.txt"
+    etl_script: "scripts/etl_local.py"
+    training_script: "scripts/train_local.py"
+    dataset_path: "./data/train_local.csv"
+
+  - name: remote_gpu_server
+    mode: remote
+    mlflow_uri: "http://mlflow.yourserver.com:5000"
+    venv_name: "orkeslora_env_gpu"
+    requirements: "requirements_gpu.txt"
+    etl_script: "scripts/etl_remote.py"
+    training_script: "scripts/train_remote.py"
+    dataset_path: "./data/train_remote.csv"
+    remote:
+      hostname: "192.168.1.100"
+      username: "ubuntu"
+      key_filename: "~/.ssh/id_rsa"
+      remote_workdir: "/home/ubuntu/orkeslora_runs/gpu_run"

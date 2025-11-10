@@ -8,3 +8,5 @@ upload.py
 .vscode
 mlruns
 legacy/
+*.yml
+!config.example.yml

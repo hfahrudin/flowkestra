@@ -2,51 +2,73 @@ import yaml
 from orkeslora.remote import RemoteTrainer
 from orkeslora.local import LocalTrainer
 
+
 class TrainingManager:
-    """
-    Unified trainer based on YAML configuration.
-    """
     def __init__(self, config_path):
-        """
-        Load configuration from YAML.
-        """
         with open(config_path, "r") as f:
             self.config = yaml.safe_load(f)
 
-        self.mode = self.config.get("mode", "local")  # "local" or "remote"
-        self.mlflow_uri = self.config.get("mlflow_uri", None)
+        self.mlflow_uri = self.config.get("mlflow_uri")
+        self.instances = self.config.get("instances", [])
+        if not self.instances:
+            raise ValueError("No instances defined in YAML under 'instances:'")
 
-        if self.mode == "local":
-            workdir = self.config.get("workdir", "./training")
-            self.trainer = LocalTrainer(workdir=workdir, mlflow_uri=self.mlflow_uri)
-        elif self.mode == "remote":
-            remote_conf = self.config["remote"]
-            self.trainer = RemoteTrainer(
-                hostname=remote_conf["hostname"],
-                username=remote_conf["username"],
-                password=remote_conf.get("password"),
-                key_filename=remote_conf.get("key_filename"),
-                port=remote_conf.get("port", 22),
-                remote_workdir=remote_conf.get("remote_workdir", "/home/user/training"),
-                mlflow_uri=self.mlflow_uri
-            )
-        else:
-            raise ValueError("Invalid mode in YAML. Use 'local' or 'remote'.")
+        self.trainers = []
 
-    def setup(self):
-        """Setup working environment if needed (remote folder, etc.)"""
-        if self.mode == "remote":
-            self.trainer.setup_remote_dir()
+        for instance_conf in self.instances:
+            mode = instance_conf.get("mode", "local")
+            venv_name = instance_conf.get("venv_name", "orkeslora_env")
+            requirements = instance_conf.get("requirements", "requirements.txt")
 
-    def deploy_script(self, script_path):
-        return self.trainer.deploy_script(script_path)
+            if mode == "local":
+                trainer = LocalTrainer(
+                    workdir=instance_conf.get("workdir", "./training"),
+                    venv_name=venv_name,
+                    requirements=requirements,
+                    mlflow_uri=instance_conf.get("mlflow_uri", self.mlflow_uri)
+                )
+            elif mode == "remote":
+                remote_conf = instance_conf["remote"]
+                trainer = RemoteTrainer(
+                    hostname=remote_conf["hostname"],
+                    username=remote_conf["username"],
+                    password=remote_conf.get("password"),
+                    key_filename=remote_conf.get("key_filename"),
+                    port=remote_conf.get("port", 22),
+                    remote_workdir=remote_conf.get("remote_workdir", "/home/user/training"),
+                    venv_name=venv_name,
+                    requirements=requirements,
+                    mlflow_uri=instance_conf.get("mlflow_uri", self.mlflow_uri)
+                )
+            else:
+                raise ValueError(f"Invalid mode '{mode}' for instance {instance_conf.get('name')}")
 
-    def run_training(self, script_path, additional_env=None):
-        self.trainer.run_training(script_path, additional_env)
+            self.trainers.append((instance_conf, trainer))
 
-    def download_artifact(self, source_path, target_path):
-        self.trainer.download_artifact(source_path, target_path)
+    def setup_all(self):
+        """Set up environment for all instances."""
+        for conf, trainer in self.trainers:
+            print(f"\n🧩 Setting up instance: {conf.get('name')}")
+            trainer.setup_environment()
 
-    def close(self):
-        if self.mode == "remote":
-            self.trainer.close()
+    def run_all(self):
+        """Run ETL and training on each instance."""
+        for conf, trainer in self.trainers:
+            print(f"\n🚀 Running instance: {conf.get('name')}")
+            etl_script = conf.get("etl_script")
+            train_script = conf.get("training_script")
+            dataset_path = conf.get("dataset_path")
+            env_vars = conf.get("env_vars", {})
+
+            if etl_script:
+                trainer.deploy_script(etl_script)
+                trainer.run_training(etl_script, env_vars)
+            if train_script:
+                trainer.deploy_script(train_script)
+                trainer.run_training(train_script, env_vars)
+            if dataset_path:
+                trainer.deploy_dataset(dataset_path)
+
+    def close_all(self):
+        for _, trainer in self.trainers:
+            trainer.close()
