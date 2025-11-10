@@ -7,3 +7,4 @@ upload.py
 .env
 .vscode
 mlruns
+legacy/
