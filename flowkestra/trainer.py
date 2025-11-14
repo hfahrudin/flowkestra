@@ -2,9 +2,12 @@ import os
 from flowkestra.runner import Runner
 from pathlib import Path
 import shutil
+from flowkestra.utils import SSHClient
+from flowkestra.schema import SSHConfig
+from typing import Optional
 
 class Trainer:
-    def __init__(self, name, workdir, origin_dir, requirements, pipelines, mlflow_uri=None, ssh_client=None):
+    def __init__(self, name, workdir, origin_dir, requirements, pipelines, mlflow_uri=None, ssh_config: Optional[SSHConfig] = None):
         """
         Args:
             name (str): Experiment name
@@ -21,9 +24,14 @@ class Trainer:
         self.requirements = Path(requirements)
         self.pipelines = pipelines
         self.mlflow_uri = mlflow_uri
+        
+        if ssh_config:
+            self.ssh_client = SSHClient(ssh_config)
+        else:
+            self.ssh_client = None
 
         # Initialize Runner (local or remote)
-        self.runner = Runner(workdir=self.workdir, ssh_client=ssh_client)
+        self.runner = Runner(workdir=self.workdir, ssh_client=self.ssh_client)
 
         # Copy all files from origin_dir to workdir
         self._sync_workdir()

@@ -1,82 +1,83 @@
+from typing import Optional
 import paramiko
+from flowkestra.schema import SSHConfig
 
 class SSHClient:
-    def __init__(self, hostname, username, password=None, key_filename=None, port=22):
+    def __init__(self, config: SSHConfig):
         """
-        Initialize SSH client connection details.
-        
-        Args:
-            hostname (str): Remote server IP or domain
-            username (str): SSH username
-            password (str, optional): SSH password
-            key_filename (str, optional): Path to private key file
-            port (int, optional): SSH port (default: 22)
+        SSH client wrapper using SSHConfig schema.
         """
-        self.hostname = hostname
-        self.username = username
-        self.password = password
-        self.key_filename = key_filename
-        self.port = port
-        self.client = None
-        self.sftp = None
+        self.config = config
+        self.client: Optional[paramiko.SSHClient] = None
+        self.sftp: Optional[paramiko.SFTPClient] = None
 
+    # ---------- internal helpers ----------
+    def _log(self, msg: str):
+        if self.config.debug:
+            print(msg)
+
+    # ---------- connection ----------
     def connect(self):
         """Establish SSH connection."""
         try:
-            print(f"Connecting to {self.hostname}...")
+            self._log(f"[SSH] Connecting to {self.config.hostname}:{self.config.port}...")
             self.client = paramiko.SSHClient()
             self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
             self.client.connect(
-                hostname=self.hostname,
-                port=self.port,
-                username=self.username,
-                password=self.password,
-                key_filename=self.key_filename,
-                timeout=10
+                hostname=self.config.hostname,
+                port=self.config.port,
+                username=self.config.username,
+                password=self.config.password,
+                key_filename=self.config.key_filename,
+                timeout=self.config.timeout,
             )
-            print("Connected successfully!")
+            self._log("[SSH] Connected successfully!")
         except Exception as e:
-            print(f"Failed to connect: {e}")
-            raise
+            raise RuntimeError(f"SSH connection failed: {e}")
 
-    def execute(self, command):
-        """Execute a command on the remote server and return its output."""
+    # ---------- command execution ----------
+    def execute(self, command: str):
+        """Execute a command remotely and return (stdout, stderr)."""
         if not self.client:
-            raise Exception("SSH client not connected. Call connect() first.")
-        
-        print(f"Executing: {command}")
+            raise RuntimeError("SSH client not connected. Call connect() first.")
+
+        self._log(f"[SSH] Executing command: {command}")
         stdin, stdout, stderr = self.client.exec_command(command)
-        output = stdout.read().decode()
-        error = stderr.read().decode()
-        
+
+        output = stdout.read().decode().strip()
+        error = stderr.read().decode().strip()
+
         if error:
-            print(f"Error: {error.strip()}")
-        return output.strip(), error.strip()
+            self._log(f"[SSH] Error: {error}")
 
-    def open_sftp(self):
-        """Open an SFTP session for file transfer."""
+        return output, error
+
+    # ---------- file operations ----------
+    def _ensure_sftp(self):
         if not self.client:
-            raise Exception("SSH client not connected. Call connect() first.")
-        self.sftp = self.client.open_sftp()
-
-    def upload(self, local_path, remote_path):
-        """Upload a file to the remote server."""
+            raise RuntimeError("SSH client not connected.")
         if not self.sftp:
-            self.open_sftp()
-        print(f"Uploading {local_path} → {remote_path}")
+            self.sftp = self.client.open_sftp()
+
+    def upload(self, local_path: str, remote_path: str):
+        """Upload file to remote server."""
+        self._ensure_sftp()
+        self._log(f"[SFTP] Uploading {local_path} → {remote_path}")
         self.sftp.put(local_path, remote_path)
 
-    def download(self, remote_path, local_path):
-        """Download a file from the remote server."""
-        if not self.sftp:
-            self.open_sftp()
-        print(f"Downloading {remote_path} → {local_path}")
+    def download(self, remote_path: str, local_path: str):
+        """Download file from remote server."""
+        self._ensure_sftp()
+        self._log(f"[SFTP] Downloading {remote_path} → {local_path}")
         self.sftp.get(remote_path, local_path)
 
+    # ---------- cleanup ----------
     def close(self):
-        """Close SSH and SFTP connections."""
+        """Close SSH and SFTP sessions."""
+        self._log("[SSH] Closing connection...")
         if self.sftp:
             self.sftp.close()
         if self.client:
             self.client.close()
-        print("Connection closed.")
+        self._log("[SSH] Connection closed.")
