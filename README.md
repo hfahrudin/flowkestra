@@ -36,40 +36,29 @@ Create a `config.yml` file to define your experiment. This file specifies the sc
 Here is an example for a local run:
 
 ```yaml
-# config.yml
+# A descriptive name for your MLflow experiment.
+mlflow_uri: "http://localhost:5000"
+experiment_name: "example_experiment"
 
-# A descriptive name for your MLflow experiment run.
-run_name: local_training_run
+# Define your experiment instances. Each instance represents a distinct run
+# with its own configuration.
+instances:
+  - mode: local # Currently, 'local' is the supported execution mode.
+    # The working directory for the instance.
+    workdir: "./test_data"
+    # The target directory where training and virtual environment will be created.
+    target_workdir: "./local_train"
+    # Path to a requirements.txt file for this instance's environment.
+    requirements: "requirements_local.txt"
+    # Define pipelines (e.g., 'train', 'evaluate') with their scripts and arguments.
+    pipelines:
+      train:
+        script: "mlflow_example.py" # The Python script to execute.
+        args: # Optional arguments to pass to the script.
+          [
+            "--epoch", "30"
+          ]
 
-# The URI for your MLflow tracking server. Can be a local path or a remote URL.
-mlflow_tracking_uri: ./mlartifacts
-
-# Defines where the tasks will be executed. 'local' is currently supported.
-machine:
-  type: local
-
-# A list of tasks to be executed sequentially.
-tasks:
-  - # A descriptive name for the task.
-    name: "Process-Data"
-    # The Python script to execute for this task.
-    script: "example/etl_local.py"
-    # (Optional) Path to a requirements.txt file for this task's environment.
-    requirements: "example/requirements_local.txt"
-    # Path to the input data for the script.
-    input_path: "example/train_local.csv"
-    # Path where the output of the script will be saved.
-    output_path: "local_train/etl_output.csv"
-
-  - name: "Train-Model"
-    script: "example/train_local.py"
-    # The input for this task is the output from the previous task.
-    input_path: "local_train/etl_output.csv"
-    output_path: "local_train/model.pkl"
-    # A dictionary of parameters to be passed to your script and logged by MLflow.
-    params:
-      n_estimators: 100
-      random_state: 42
 ```
 
 ### 3. Run Your Experiment
