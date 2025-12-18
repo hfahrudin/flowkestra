@@ -4,12 +4,6 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import paramiko
 import socket
 import os
-import requests
-
-# Define paths for keys
-KEY_DIR = os.path.join(os.path.dirname(__file__), 'keys')
-HOST_KEY = os.path.join(KEY_DIR, 'mock_host_key')
-CLIENT_KEY_PUB = os.path.join(KEY_DIR, 'mock_client_key.pub')
 
 class MockVMHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -24,13 +18,12 @@ class MockVMHandler(BaseHTTPRequestHandler):
             self.wfile.write(b'{"error": "Not Found"}')
 
 class MockSSHServer(paramiko.ServerInterface):
-    def __init__(self):
+    def __init__(self, client_pub_key_path):
         self.event = threading.Event()
-        with open(CLIENT_KEY_PUB, "r") as f:
-            self.client_pub_key_data = f.read().strip()
+        self.client_pub_key_path = client_pub_key_path
 
     def check_auth_publickey(self, username, key):
-        with open(os.path.join(KEY_DIR, 'mock_client_key.pub'), 'r') as f:
+        with open(self.client_pub_key_path, 'r') as f:
             pubkey_line = f.read().strip()
         key_type, key_string, comment = pubkey_line.split()
 
@@ -48,10 +41,12 @@ class MockSSHServer(paramiko.ServerInterface):
         return "publickey"
 
 class MockVM:
-    def __init__(self, host='localhost', http_port=8000, ssh_port=2200):
+    def __init__(self, host='localhost', http_port=8000, ssh_port=2200, host_key_path=None, client_pub_key_path=None):
         self.host = host
         self.http_port = http_port
         self.ssh_port = ssh_port
+        self.host_key_path = host_key_path
+        self.client_pub_key_path = client_pub_key_path
 
         # HTTP Server
         self.http_server = HTTPServer((self.host, self.http_port), MockVMHandler)
@@ -73,8 +68,8 @@ class MockVM:
             try:
                 client_sock, client_addr = self.ssh_server_sock.accept()
                 t = paramiko.Transport(client_sock)
-                t.add_server_key(paramiko.Ed25519Key(filename=HOST_KEY))
-                server = MockSSHServer()
+                t.add_server_key(paramiko.Ed25519Key(filename=self.host_key_path))
+                server = MockSSHServer(self.client_pub_key_path)
                 t.start_server(server=server)
                 chan = t.accept(20)
                 if chan is not None:
@@ -114,31 +109,3 @@ class MockVM:
     @property
     def ssh_uri(self):
         return f"ssh://{self.host}:{self.ssh_port}"
-
-if __name__ == '__main__':
-
-
-    mock_vm = MockVM()
-    mock_vm.start()
-
-    try:
-        # Example of how to use the mock vm's HTTP server
-        response = requests.get(f"{mock_vm.http_url}/status")
-        print(f"Response from mock VM HTTP server: {response.json()}")
-
-        # Example of how to use the mock vm's SSH server
-        client = paramiko.SSHClient()
-        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        client.connect(
-            mock_vm.host,
-            port=mock_vm.ssh_port,
-            username='testuser',
-            key_filename=os.path.join(KEY_DIR, 'mock_client_key')
-        )
-        print("Successfully connected to Mock VM SSH server.")
-        client.close()
-
-    except Exception as e:
-        print(f"An error occurred: {e}")
-    finally:
-        mock_vm.stop()
