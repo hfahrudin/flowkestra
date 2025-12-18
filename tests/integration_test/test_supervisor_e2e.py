@@ -9,6 +9,7 @@ from flowkestra.supervisor import Supervisor
 import random
 import secrets
 import time
+import warnings
 
 def validate_mlflow_results(experiment_name):
     base_url = "http://localhost:5000/api/2.0/mlflow"
@@ -122,7 +123,23 @@ except Exception as e:
     }
     # shutil.rmtree(base_dir) # Comment this out if you want to inspect files after failure
 
+def is_mlflow_offline():
+    """Real check against the local server."""
+    try:
+        response = requests.get("http://localhost:5000/health", timeout=2)
+        return response.status_code != 200
+    except:
+        return True
+
 def test_supervisor_randomized_instances(project_structure, capfd):
+
+    if is_mlflow_offline():
+        warnings.warn(
+            "ENVIRONMENT ISSUE: MLflow server is offline. Skipping E2E validation.", 
+            UserWarning
+        )
+        pytest.skip("MLflow server not found at localhost:5000")
+
     supervisor = Supervisor(config_path=str(project_structure["config_path"]))
     supervisor.run_all()
 
@@ -149,3 +166,5 @@ def test_supervisor_randomized_instances(project_structure, capfd):
     
     print(f"Randomized instances: {expected_runs}, Actual MLflow runs: {actual_runs}")
     assert actual_runs == expected_runs, f"Expected {expected_runs} runs, but found {actual_runs}"
+
+
