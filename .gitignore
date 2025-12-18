@@ -18,3 +18,5 @@ local_*
 outputs
 legacy
 build
+sandbox/
+.pytest_cache

@@ -1,3 +1,4 @@
 mlflow
 paramiko
 virtualenv
+pytest
