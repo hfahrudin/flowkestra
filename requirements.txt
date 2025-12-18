@@ -2,3 +2,4 @@ mlflow
 paramiko
 virtualenv
 pytest
+pytest-html

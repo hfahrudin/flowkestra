@@ -20,3 +20,4 @@ legacy
 build
 sandbox/
 .pytest_cache
+tests/reports/
