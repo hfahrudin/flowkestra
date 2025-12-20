@@ -1,6 +1,7 @@
 import yaml
 import threading
 import multiprocessing
+from flowkestra import worker
 from flowkestra.worker import Worker
 import uuid
 from flowkestra.schema import ConfigSchema
@@ -32,6 +33,8 @@ class Supervisor:
             raise RuntimeError(f"MLflow server not reachable at {self.mlflow_uri}")
         self._initialize_workers()
 
+
+
     def _check_mlflow_server(self, uri: str) -> bool:
         """
         Verify that the MLflow server is alive by querying the /#/experiments endpoint.
@@ -45,14 +48,20 @@ class Supervisor:
     def _initialize_workers(self):
         def init_worker(cfg):
             unique_id = str(uuid.uuid4())
-            self.worker_state[unique_id] = self.manager.dict({
+            initial_data = self.manager.dict({
                 'id': unique_id,
                 'obj': None,
                 'status': 'initializing'
             })
+            self.worker_state[unique_id] = self.manager.dict(initial_data)
             worker = self._assign_worker(unique_id, cfg)
-            self.worker_state[unique_id]['obj'] = worker
-
+        
+            # Update and re-assign to ensure the Manager syncs across processes
+            current_state = self.worker_state[unique_id]
+            current_state['obj'] = worker
+            current_state['status'] = 'ready'
+            self.worker_state[unique_id] = current_state
+            
         with ThreadPoolExecutor() as executor:
             futures = [executor.submit(init_worker, cfg) for cfg in self.config['instances']]
 
@@ -214,7 +223,10 @@ class Supervisor:
         # 1. Initialize concurrency units
         for worker_id, worker_info in self.worker_state.items():
             worker: Worker = worker_info['obj'] 
-
+            print(worker_id, worker)
+            if worker is None:
+                print(f"Error: Worker {worker_id} failed to initialize.")
+                raise RuntimeError(f"Worker {worker_id} is None during run_all.")
             # Use multiprocessing for local workers (no SSH client)
             # and threading for remote workers.
             if worker.ssh_client is None:

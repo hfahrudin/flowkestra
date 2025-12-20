@@ -72,3 +72,36 @@ def test_local_worker_e2e(temp_project_dir):
     assert temp_project_dir["output_file"].read_text() == "Success!"
 
     worker.close()
+
+
+
+def test_remote_worker_e2e(temp_project_dir):
+    """
+    End-to-end test for a remote worker.
+    This test will:
+    1. Set up a temporary project structure.
+    2. Create and run a Worker instance.
+    3. Verify that the worker's script ran successfully.
+    """
+    worker_id = "e2e_worker"
+    main_states = {worker_id: {}}
+
+    #NOTE: NOT WORKING YET - placeholder for remote test
+    worker = Worker(
+        worker_id=worker_id,
+        workdir=temp_project_dir["target_dir"],
+        origin_dir=temp_project_dir["origin_dir"],
+        main_states=main_states,
+        requirements=temp_project_dir["requirements_path"],
+        pipelines={"step1": {"script": temp_project_dir["script_path"]}},
+        suppress_output=False,
+        clean_workdir_after_run=False # Keep workdir for inspection
+    )
+
+    worker.run()
+
+    # Verify that the script ran successfully
+    assert temp_project_dir["output_file"].exists()
+    assert temp_project_dir["output_file"].read_text() == "Success!"
+
+    worker.close()

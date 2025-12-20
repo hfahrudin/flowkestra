@@ -69,7 +69,21 @@ class Runner:
                 return venv_path / "Scripts" / "pip.exe"
             else:
                 return venv_path / "bin" / "pip"
+            
+    def _get_python_exe(self):
+        """Returns the correct path to the venv python executable."""
+        venv_path = self.workdir / self.venv_name
+        
+        # Check if we are dealing with a Windows environment
+        # (Works for both local Windows and Remote SSH Windows)
+        is_windows = (self.ssh_client and self.remote_is_windows) or \
+                    (not self.ssh_client and platform.system() == "Windows")
 
+        if is_windows:
+            return venv_path / "Scripts" / "python.exe"
+        else:
+            return venv_path / "bin" / "python"
+        
     def setup_environment(self, requirements):
         """Set up virtual environment and install requirements."""
         stdout = subprocess.DEVNULL if self.suppress_output else None
@@ -96,15 +110,15 @@ class Runner:
                     stdout=stdout,
                     stderr=stderr
                 )
-            pip_path = self._get_pip()
+            python_path = self._get_python_exe()
             subprocess.run(
-                [str(pip_path), "install", "--upgrade", "pip"],
+                [str(python_path), "-m", "pip", "install", "--upgrade", "pip"],
                 check=True,
                 stdout=stdout,
                 stderr=stderr
             )
             subprocess.run(
-                [str(pip_path), "install", "-r", str(requirements)],
+                [str(python_path), "-m", "pip", "install", "-r", str(requirements)],
                 check=True,
                 stdout=stdout,
                 stderr=stderr
