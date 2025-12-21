@@ -122,7 +122,8 @@ class Supervisor:
         
         elif config['mode'] == 'remote':
             # This assumes your Worker class can handle ssh_config when provided
-            worker = Worker(**worker_args, ssh_config=config.get('ssh'))
+            worker_args['ssh_config'] = config.get('ssh_config')
+            worker = Worker(**worker_args)
             
         else:
             raise ValueError(f"Unknown worker mode: {config['mode']}")
@@ -223,7 +224,6 @@ class Supervisor:
         # 1. Initialize concurrency units
         for worker_id, worker_info in self.worker_state.items():
             worker: Worker = worker_info['obj'] 
-            print(worker_id, worker)
             if worker is None:
                 print(f"Error: Worker {worker_id} failed to initialize.")
                 raise RuntimeError(f"Worker {worker_id} is None during run_all.")

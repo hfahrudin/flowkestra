@@ -22,7 +22,6 @@ class Worker:
             self.ssh_client = SSHClient(ssh_config)
         else:
             self.ssh_client = None
-
         # Initialize Runner (local or remote)
         self.runner = Runner(
             workdir=self.workdir, 

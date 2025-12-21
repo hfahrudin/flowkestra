@@ -23,6 +23,7 @@ class PipelineConfig(BaseModel):
 
 class InstanceConfig(BaseModel):
     mode: str
+    ssh_config: Optional[SSHConfig] = None
     workdir: str
     target_workdir: str
     requirements: str

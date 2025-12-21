@@ -26,6 +26,22 @@ instances:
           "--epoch", "30"
         ]
 
+  - mode: remote
+    ssh_config:
+      hostname: "your.remote.server"
+      username: "your"
+      key_filename: "your_key.pem"
+      password: null
+    workdir: "./test_data"           
+    target_workdir: "./remote_train"            # Where training and venv will l
+    requirements: "requirements_remote.txt"   # Pip requirements file
+    pipelines: 
+      train : 
+        script: "mlflow_example.py" # Training script path
+        args: [
+          "--epoch", "30"
+        ]
+
   # - name: remote_gpu_server
   #   mode: remote
   #   mlflow_uri: "http://mlflow.yourserver.com:5000"
