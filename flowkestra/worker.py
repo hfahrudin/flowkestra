@@ -33,7 +33,8 @@ class Worker:
         )
 
         self.main_states[self.worker_id]['status'] = 'synchronizing'
-        self._clean_workdir()
+        if self.clean_workdir_after_run:
+            self._clean_workdir()
 
         # Now sync origin_dir into the clean directory
         self._sync_workdir()
@@ -98,12 +99,14 @@ class Worker:
             self.runner.ssh_client.execute(f"rm -rf {self.workdir}/.* 2>/dev/null || true")  
         else:
             # Local clean
+
             if self.workdir.exists():
                 for item in self.workdir.iterdir():
                     if item.is_file():
                         item.unlink()
                     else:
                         shutil.rmtree(item)
+                shutil.rmtree(self.workdir)
 
     def close(self):
         if self.clean_workdir_after_run:
