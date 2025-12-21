@@ -10,6 +10,7 @@ import time
 import os 
 from concurrent.futures import ThreadPoolExecutor
 import requests
+from flowkestra.schema import SSHConfig
 
 
 class Supervisor:
@@ -79,10 +80,9 @@ class Supervisor:
                     self.clear_screen()
                 
                 self.print_status_table_setup(f"Worker Monitor ({self.experiment_name})")
-            else:
                 # If no visualization, just wait for all initialization futures to complete
-                for f in futures:
-                    f.result() # This will also raise any exceptions from init_worker
+            for f in futures:
+                f.result() # This will also raise any exceptions from init_worker
 
     def _load_config(self, yaml_path: str) -> dict:
         with open(yaml_path, 'r') as f:
@@ -122,7 +122,10 @@ class Supervisor:
         
         elif config['mode'] == 'remote':
             # This assumes your Worker class can handle ssh_config when provided
-            worker_args['ssh_config'] = config.get('ssh_config')
+            ssh_config = config.get('ssh_config')
+            ssh_config['debug'] = not self.clear_screen_on_update
+            worker_args['ssh_config'] = SSHConfig(**ssh_config)
+            print(worker_args['ssh_config'])
             worker = Worker(**worker_args)
             
         else:

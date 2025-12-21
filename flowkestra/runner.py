@@ -36,7 +36,6 @@ class Runner:
                     print("Detected remote OS: Windows")
                 return True
         except Exception:
-            # Assuming any error means it's not a Windows shell that knows 'ver'
             pass
         if not self.suppress_output:
             print("Detected remote OS: Unix-like")
@@ -91,14 +90,17 @@ class Runner:
 
         if self.ssh_client:
             # Remote
+            posix_venv_path = (self.workdir / self.venv_name).as_posix()
+            posix_pip_path = self._get_pip().as_posix()
+            posix_requirements = Path(requirements).as_posix()
             cmds = [
-                f"mkdir -p {self.workdir}",
-                f"python3 -m venv {self.workdir / self.venv_name}",
-                f"{self._get_pip()} install --upgrade pip",
-                f"{self._get_pip()} install -r {requirements}"
+                f"mkdir -p {self.workdir.as_posix()}",
+                f"python3 -m venv {posix_venv_path}",
+                f"{posix_pip_path} install --upgrade pip",
+                f"{posix_pip_path} install -r {posix_requirements}"
             ]
             for cmd in cmds:
-                self.ssh_client.execute(cmd, suppress_output=self.suppress_output)
+                self.ssh_client.execute(cmd)
         else:
             # Local
             self.workdir.mkdir(parents=True, exist_ok=True)

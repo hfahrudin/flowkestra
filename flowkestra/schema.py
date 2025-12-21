@@ -13,7 +13,7 @@ class SSHConfig(BaseModel):
         None, description="Path to the private key file"
     )
     port: int = Field(22, description="SSH port")
-
+    debug: bool = Field(False, description="Enable debug mode for SSH operations")
 
 class PipelineConfig(BaseModel):
     script: str

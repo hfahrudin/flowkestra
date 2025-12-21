@@ -19,7 +19,10 @@ class Worker:
         self.main_states = main_states
         self.clean_workdir_after_run = clean_workdir_after_run
         if ssh_config:
-            self.ssh_client = SSHClient(ssh_config)
+            try:
+                self.ssh_client = SSHClient(ssh_config)
+            except Exception as e:
+                raise RuntimeError(f"Failed to establish SSH connection: {e}")
         else:
             self.ssh_client = None
         # Initialize Runner (local or remote)
@@ -44,7 +47,7 @@ class Worker:
         """Copy origin_dir contents to workdir (local or remote)."""
         if self.runner.ssh_client:
             # Remote: use SFTP
-            self.runner.ssh_client.open_sftp()
+            self.runner.ssh_client.client.open_sftp()
             for src_path in self.origin_dir.glob("**/*"):
                 if src_path.is_file():
                     rel_path = src_path.relative_to(self.origin_dir)
