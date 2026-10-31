@@ -96,14 +96,6 @@ Flowkestra will then run your defined tasks in order.
 
 ---
 
-## Roadmap & Next Features
-
-- **Remote Training**: Support for executing tasks on remote machines via SSH.
-- **Automated Parameter Tuning**: Integrate with libraries to automate hyperparameter searches.
-- **Expanded Cloud Support**: Add direct support for cloud environments.
-
----
-
 ## Notes
 
 - This project is archived. See [Project Status](#project-status) above.
