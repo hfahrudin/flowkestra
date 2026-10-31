@@ -3,7 +3,22 @@
   A Lightweight Orchestrator for Machine Learning Experiments
 </h2>
 
+## Project Status
 
+> **Archived. I may not continue this project.**
+
+Research into where Flowkestra could fit (October 2026) found no niche worth building for:
+
+- **Its core features are already covered.** YAML pipelines, a venv per run, MLflow logging and parallel runs are handled by mature tools like MLflow, Hydra, DVC and Kedro.
+- **Remote and multi-machine runs are taken.** SkyPilot and dstack run jobs on your own SSH machines, and [mlsweep](https://pypi.org/project/mlsweep/) already runs sweeps over SSH with nothing to install on the hosts.
+- **The remaining gaps are crowded with small tools.** At least six SSH GPU queues and several agent/MCP experiment runners appeared in 2026, and none has gained real adoption. The demand for another one looks weak.
+- **Similar projects stalled.** Guild AI, Orchest and Ploomber show how hard it is to sustain a broad experiment orchestrator with one maintainer.
+
+Remote (SSH) mode is unfinished and does not work. Only local mode runs.
+
+If you need this today, look at [mlsweep](https://pypi.org/project/mlsweep/), [SkyPilot](https://github.com/skypilot-org/skypilot) or [Hydra](https://hydra.cc/).
+
+---
 
 Running machine learning experiments often involves a series of steps, such as data processing, training, and evaluation. Managing the dependencies and parameters for each step can become complex. Flowkestra simplifies this process by allowing you to define your entire workflow in a single configuration file.
 
@@ -91,4 +106,4 @@ Flowkestra will then run your defined tasks in order.
 
 ## Notes
 
-- This project is in its early stages. Contributions and feedback are welcome.
+- This project is archived. See [Project Status](#project-status) above.
